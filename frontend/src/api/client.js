@@ -22,3 +22,24 @@ export async function analyseData(file) {
   }
   return res.json()
 }
+
+export async function trainClassifier(payload) {
+  const res = await fetch(`${BASE}/classify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Training failed') }
+  return res.json()
+ }
+  
+ export async function trainRegressor(payload) {
+  const res = await fetch(`${BASE}/regress`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Training failed') }
+  return res.json()
+ }
+  

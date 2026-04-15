@@ -13,32 +13,73 @@ export default function Home() {
   const [selected, setSelected] = useState(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [error, setError]   = useState('')
-  const fileRef  = useRef()
+  const [error, setError] = useState('')
+  const fileRef = useRef()
   const navigate = useNavigate()
 
   async function handleFile(file) {
-    if (!selected) { setError('Pick a model type first.'); return }
+    if (!selected) {
+      setError('Pick a model type first.')
+      return
+    }
+
     if (!file) return
-    if (!file.name.endsWith('.csv')) { setError('Only CSV files supported.'); return }
+
+    if (!file.name.endsWith('.csv')) {
+      setError('Only CSV files supported.')
+      return
+    }
+
     setError('')
     setUploading(true)
+
     try {
+      // ✅ Convert file to base64 (SAFE)
+      const base64 = await fileToBase64(file)
+      if (!base64) throw new Error('Failed to convert file')
+
+      sessionStorage.setItem('csvRaw', base64)
+
+      // ✅ Upload CSV
       const data = await uploadCSV(file)
       sessionStorage.setItem('dataset', JSON.stringify(data))
       sessionStorage.setItem('modelType', selected)
-      // Call analyse and store results for the visualise page
+
+      // ✅ Analyse
       const viz = await analyseData(file)
       sessionStorage.setItem('vizData', JSON.stringify(viz))
-
       sessionStorage.setItem('csvFile', file.name)
+
+      // ✅ Navigate
       navigate('/visualise')
 
-    } catch(e) {
-      setError(e.message)
+    } catch (e) {
+      console.error(e) // 🔥 IMPORTANT for debugging
+      setError(e.message || 'Something went wrong')
     } finally {
       setUploading(false)
     }
+  }
+
+  // ✅ FIXED BASE64 FUNCTION
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = () => {
+        if (!reader.result) {
+          reject(new Error('File read failed'))
+          return
+        }
+
+        const base64 = reader.result.split(',')[1]
+        resolve(base64)
+      }
+
+      reader.onerror = () => reject(new Error('File read error'))
+
+      reader.readAsDataURL(file)
+    })
   }
 
   return (
@@ -49,61 +90,63 @@ export default function Home() {
       </header>
 
       <main style={{ maxWidth: 820, margin: '0 auto', padding: '64px 24px' }}>
-        <div className="fade-up" style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ display: 'inline-block', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: 99, padding: '4px 14px', fontSize: 12, color: '#a09af0', marginBottom: 20, letterSpacing: '0.05em' }}>
-            NO-CODE ML BUILDER
-          </div>
-          <h1 style={{ fontSize: 48, fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', margin: '0 0 16px', color: '#f0f0f0' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <h1 style={{ fontSize: 48, fontWeight: 600, color: '#f0f0f0' }}>
             Build ML models.<br /><span style={{ color: '#6c63ff' }}>Get the code.</span>
           </h1>
-          <p style={{ fontSize: 16, color: '#555', maxWidth: 440, margin: '0 auto', lineHeight: 1.6 }}>
-            Upload a CSV, pick a model, train it, and get working Python code — no setup needed.
-          </p>
         </div>
 
-        <div className="fade-up delay-1" style={{ marginBottom: 36 }}>
-          <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500, marginBottom: 14 }}>Step 1 — Choose model type</p>
+        {/* MODEL SELECT */}
+        <div style={{ marginBottom: 36 }}>
+          <p style={{ fontSize: 12, color: '#555', marginBottom: 14 }}>Step 1 — Choose model type</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
             {MODELS.map(m => (
               <button key={m.type} onClick={() => { setSelected(m.type); setError('') }}
                 style={{
                   background: selected === m.type ? 'rgba(108,99,255,0.1)' : '#13131a',
                   border: `1px solid ${selected === m.type ? m.accent : 'rgba(255,255,255,0.07)'}`,
-                  borderRadius: 12, padding: '18px 16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
+                  borderRadius: 12, padding: '18px',
+                  cursor: 'pointer',
                 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: selected === m.type ? m.accent : '#e0e0e0', marginBottom: 6 }}>{m.label}</div>
-                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>{m.desc}</div>
+                <div style={{ color: selected === m.type ? m.accent : '#e0e0e0' }}>{m.label}</div>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="fade-up delay-2">
-          <p style={{ fontSize: 12, color: selected ? '#555' : '#333', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500, marginBottom: 14, transition: 'color 0.3s' }}>Step 2 — Upload your CSV</p>
+        {/* FILE UPLOAD */}
+        <div>
+          <p style={{ fontSize: 12, marginBottom: 14 }}>Step 2 — Upload CSV</p>
+
           <div
             onClick={() => selected && fileRef.current.click()}
             onDragOver={e => { e.preventDefault(); if (selected) setDragging(true) }}
             onDragLeave={() => setDragging(false)}
-            onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }}
+            onDrop={e => {
+              e.preventDefault()
+              setDragging(false)
+              handleFile(e.dataTransfer.files[0])
+            }}
             style={{
-              border: `1.5px dashed ${dragging ? '#6c63ff' : selected ? 'rgba(108,99,255,0.35)' : 'rgba(255,255,255,0.06)'}`,
-              borderRadius: 16, padding: '48px 32px', textAlign: 'center',
-              cursor: selected ? 'pointer' : 'default',
-              background: dragging ? 'rgba(108,99,255,0.05)' : 'transparent',
-              transition: 'all 0.2s', opacity: selected ? 1 : 0.35,
-            }}>
-            <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
-            {uploading
-              ? <div><div style={{ width: 32, height: 32, border: '2px solid rgba(108,99,255,0.3)', borderTop: '2px solid #6c63ff', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} /><p style={{ color: '#555', fontSize: 14 }}>Uploading...</p></div>
-              : <div>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>📂</div>
-                  <p style={{ color: '#e0e0e0', fontSize: 15, fontWeight: 500, marginBottom: 6 }}>{dragging ? 'Drop it!' : 'Drag & drop your CSV'}</p>
-                  <p style={{ color: '#444', fontSize: 13 }}>or click to browse</p>
-                  {!selected && <p style={{ color: '#6c63ff', fontSize: 12, marginTop: 10 }}>← Pick a model type first</p>}
-                </div>
-            }
+              border: '1.5px dashed #6c63ff',
+              borderRadius: 16,
+              padding: 40,
+              textAlign: 'center',
+              cursor: selected ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv"
+              style={{ display: 'none' }}
+              onChange={e => handleFile(e.target.files[0])}
+            />
+
+            {uploading ? 'Uploading...' : 'Click or drag CSV here'}
           </div>
-          {error && <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#f87171' }}>{error}</div>}
+
+          {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
       </main>
     </div>
