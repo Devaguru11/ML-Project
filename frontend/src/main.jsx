@@ -7,6 +7,8 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
+      <div className="scanlines" />
+      <div className="glow-orb-2" />
       <App />
     </BrowserRouter>
   </React.StrictMode>

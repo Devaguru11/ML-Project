@@ -55,3 +55,13 @@ export async function trainNeural(payload) {
   if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Training failed') }
   return res.json()
 }
+
+export async function generateCode(payload) {
+  const res = await fetch(`${BASE}/generate-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Code generation failed') }
+  return res.json()
+}

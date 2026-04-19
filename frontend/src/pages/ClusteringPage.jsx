@@ -1,3 +1,4 @@
+import CodeExport from '../components/CodeExport.jsx'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { trainCluster } from '../api/client'
@@ -8,14 +9,12 @@ import {
 } from 'recharts'
 
 const MODELS = [
-  { id: 'kmeans',        label: 'K-Means',         tip: 'Partitions data into K clusters. Fast and widely used.' },
-  { id: 'dbscan',        label: 'DBSCAN',           tip: 'Finds clusters of arbitrary shape. Handles noise/outliers.' },
-  { id: 'agglomerative', label: 'Agglomerative',    tip: 'Builds a hierarchy of clusters bottom-up.' },
+  { id: 'kmeans',        label: 'K-Means',      tip: 'Partitions data into K clusters. Fast and widely used.' },
+  { id: 'dbscan',        label: 'DBSCAN',        tip: 'Finds clusters of arbitrary shape. Handles noise/outliers.' },
+  { id: 'agglomerative', label: 'Agglomerative', tip: 'Builds a hierarchy of clusters bottom-up.' },
 ]
 
 const ACCENT = '#10b981'
-
-// Distinct colours per cluster (up to 12)
 const CLUSTER_COLORS = [
   '#10b981','#6c63ff','#f59e0b','#0ea5e9','#f87171',
   '#a78bfa','#34d399','#fb923c','#38bdf8','#e879f9',
@@ -24,16 +23,16 @@ const CLUSTER_COLORS = [
 const noiseColor = '#444'
 
 export default function ClusteringPage() {
-  const [ds, setDs]           = useState(null)
-  const [model, setModel]     = useState('kmeans')
+  const [ds, setDs]             = useState(null)
+  const [model, setModel]       = useState('kmeans')
   const [features, setFeatures] = useState([])
   const [nClusters, setNClusters] = useState(3)
-  const [eps, setEps]         = useState(0.5)
+  const [eps, setEps]           = useState(0.5)
   const [minSamples, setMinSamples] = useState(5)
-  const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState(null)
-  const [error, setError]     = useState('')
-  const [csvRaw, setCsvRaw]   = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [results, setResults]   = useState(null)
+  const [error, setError]       = useState('')
+  const [csvRaw, setCsvRaw]     = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -59,17 +58,10 @@ export default function ClusteringPage() {
     setError('')
     setLoading(true)
     try {
-      const payload = {
-        model_name: model,
-        features,
-        csv_data: csvRaw,
-        n_clusters: nClusters,
-        eps,
-        min_samples: minSamples,
-      }
-      const res = await trainCluster(payload)
-      setResults(res)
-    } catch (e) {
+      const res = await trainCluster({ model_name: model, features, csv_data: csvRaw, n_clusters: nClusters, eps, min_samples: minSamples })
+      // ── DAY 5: store model config alongside results ──
+      setResults({ ...res, model_name: model, features, n_clusters: nClusters, eps, min_samples: minSamples })
+    } catch(e) {
       setError(e.message)
     } finally {
       setLoading(false)
@@ -77,9 +69,7 @@ export default function ClusteringPage() {
   }
 
   if (!ds) return null
-  const numCols = ds.columns
-    .filter(c => c.dtype.includes('int') || c.dtype.includes('float'))
-    .map(c => c.name)
+  const numCols = ds.columns.filter(c => c.dtype.includes('int') || c.dtype.includes('float')).map(c => c.name)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
@@ -95,7 +85,6 @@ export default function ClusteringPage() {
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#f0f0f0', marginBottom: 4 }}>Configure model</h2>
             <p style={{ color: '#555', fontSize: 14, marginBottom: 28 }}>Set up your clustering model.</p>
 
-            {/* Algorithm */}
             <Section label='1. Pick algorithm'>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {MODELS.map(m => (
@@ -111,15 +100,12 @@ export default function ClusteringPage() {
               </div>
             </Section>
 
-            {/* Dynamic params */}
             {(model === 'kmeans' || model === 'agglomerative') && (
               <Section label='2. Number of clusters'>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <input
-                    type='range' min={2} max={12} value={nClusters}
+                  <input type='range' min={2} max={12} value={nClusters}
                     onChange={e => setNClusters(Number(e.target.value))}
-                    style={{ flex: 1, accentColor: ACCENT }}
-                  />
+                    style={{ flex: 1, accentColor: ACCENT }} />
                   <span style={{ fontSize: 24, fontWeight: 600, color: ACCENT, fontFamily: 'monospace', minWidth: 32 }}>{nClusters}</span>
                 </div>
                 <p style={{ fontSize: 11, color: '#444', marginTop: 6 }}>K = number of cluster groups to find</p>
@@ -132,22 +118,18 @@ export default function ClusteringPage() {
                   <div>
                     <p style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>Epsilon (neighbourhood radius)</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <input
-                        type='range' min={0.1} max={3} step={0.1} value={eps}
+                      <input type='range' min={0.1} max={3} step={0.1} value={eps}
                         onChange={e => setEps(parseFloat(e.target.value))}
-                        style={{ flex: 1, accentColor: ACCENT }}
-                      />
+                        style={{ flex: 1, accentColor: ACCENT }} />
                       <span style={{ fontSize: 16, fontWeight: 600, color: ACCENT, fontFamily: 'monospace', minWidth: 36 }}>{eps}</span>
                     </div>
                   </div>
                   <div>
                     <p style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>Min samples per cluster</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <input
-                        type='range' min={2} max={20} value={minSamples}
+                      <input type='range' min={2} max={20} value={minSamples}
                         onChange={e => setMinSamples(Number(e.target.value))}
-                        style={{ flex: 1, accentColor: ACCENT }}
-                      />
+                        style={{ flex: 1, accentColor: ACCENT }} />
                       <span style={{ fontSize: 16, fontWeight: 600, color: ACCENT, fontFamily: 'monospace', minWidth: 36 }}>{minSamples}</span>
                     </div>
                   </div>
@@ -155,7 +137,6 @@ export default function ClusteringPage() {
               </Section>
             )}
 
-            {/* Features */}
             <Section label='3. Feature columns (select ≥ 2)'>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {numCols.map(c => (
@@ -170,11 +151,7 @@ export default function ClusteringPage() {
               <p style={{ fontSize: 11, color: '#444', marginTop: 8 }}>{features.length} selected · PCA will reduce to 2D for visualisation</p>
             </Section>
 
-            {error && (
-              <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#f87171', marginBottom: 16 }}>
-                {error}
-              </div>
-            )}
+            {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#f87171', marginBottom: 16 }}>{error}</div>}
 
             <button onClick={handleTrain} disabled={loading} style={{
               width: '100%', padding: '14px', background: loading ? '#333' : ACCENT,
@@ -206,49 +183,31 @@ function ClusteringResults({ results, onReset }) {
         <button onClick={onReset} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#888', fontSize: 13, cursor: 'pointer' }}>← Reconfigure</button>
       </div>
 
-      {/* Silhouette score card */}
       <div style={{ display: 'grid', gridTemplateColumns: results.silhouette !== null ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 24 }}>
         <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 32, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
-            {results.n_clusters_found}
-          </div>
+          <div style={{ fontSize: 32, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>{results.n_clusters_found}</div>
           <div style={{ fontSize: 12, color: '#555' }}>Clusters found</div>
         </div>
         {results.silhouette !== null && (
           <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, fontWeight: 600, color: '#6c63ff', fontFamily: 'monospace', marginBottom: 4 }}>
-              {results.silhouette}
-            </div>
+            <div style={{ fontSize: 32, fontWeight: 600, color: '#6c63ff', fontFamily: 'monospace', marginBottom: 4 }}>{results.silhouette}</div>
             <div style={{ fontSize: 12, color: '#555' }}>Silhouette score</div>
             <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>−1 worst · 0 overlap · +1 best</div>
           </div>
         )}
       </div>
 
-      {/* PCA Scatter plot */}
       <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
-        <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
-          2D cluster scatter (PCA)
-        </p>
+        <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>2D cluster scatter (PCA)</p>
         <ResponsiveContainer width='100%' height={320}>
           <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
             <CartesianGrid strokeDasharray='3 3' stroke='rgba(255,255,255,0.04)' />
             <XAxis dataKey='x' name='PC1' tick={{ fill: '#555', fontSize: 11 }} label={{ value: 'PC 1', position: 'insideBottom', offset: -5, fill: '#555', fontSize: 11 }} />
             <YAxis dataKey='y' name='PC2' tick={{ fill: '#555', fontSize: 11 }} />
-            <Tooltip
-              contentStyle={{ background: '#13131a', border: '1px solid #333', borderRadius: 8, color: '#f0f0f0', fontSize: 12 }}
-              formatter={(val, name) => [val.toFixed(3), name]}
-            />
-            <Scatter
-              data={results.scatter}
-              fill='#10b981'
-            >
+            <Tooltip contentStyle={{ background: '#13131a', border: '1px solid #333', borderRadius: 8, color: '#f0f0f0', fontSize: 12 }} formatter={(val) => [val.toFixed(3)]} />
+            <Scatter data={results.scatter} fill='#10b981'>
               {results.scatter.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={entry.cluster === -1 ? noiseColor : CLUSTER_COLORS[entry.cluster % CLUSTER_COLORS.length]}
-                  opacity={entry.cluster === -1 ? 0.3 : 0.8}
-                />
+                <Cell key={i} fill={entry.cluster === -1 ? noiseColor : CLUSTER_COLORS[entry.cluster % CLUSTER_COLORS.length]} opacity={entry.cluster === -1 ? 0.3 : 0.8} />
               ))}
             </Scatter>
           </ScatterChart>
@@ -256,7 +215,6 @@ function ClusteringResults({ results, onReset }) {
         <p style={{ fontSize: 11, color: '#444', marginTop: 10 }}>Each colour = one cluster · Grey = noise (DBSCAN only)</p>
       </div>
 
-      {/* Cluster size breakdown */}
       <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
         <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Cluster sizes</p>
         <ResponsiveContainer width='100%' height={Math.max(120, results.cluster_sizes.length * 44)}>
@@ -266,15 +224,22 @@ function ClusteringResults({ results, onReset }) {
             <Tooltip contentStyle={{ background: '#13131a', border: '1px solid #333', borderRadius: 8, color: '#f0f0f0' }} />
             <Bar dataKey='size' radius={[0, 4, 4, 0]}>
               {results.cluster_sizes.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={entry.cluster === -1 ? noiseColor : CLUSTER_COLORS[entry.cluster % CLUSTER_COLORS.length]}
-                />
+                <Cell key={i} fill={entry.cluster === -1 ? noiseColor : CLUSTER_COLORS[entry.cluster % CLUSTER_COLORS.length]} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* ── DAY 5: Code export ── */}
+      <CodeExport payload={{
+        model_type: 'clustering',
+        model_name: results.model_name || 'kmeans',
+        features: results.features || [],
+        n_clusters: results.n_clusters || 3,
+        eps: results.eps || 0.5,
+        min_samples: results.min_samples || 5,
+      }} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import CodeExport from '../components/CodeExport.jsx'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { trainNeural } from '../api/client'
@@ -10,24 +11,24 @@ import {
 const ACCENT = '#f59e0b'
 
 const ACTIVATIONS = [
-  { id: 'relu',    label: 'ReLU',    tip: 'Best default. Fast and avoids vanishing gradients.' },
-  { id: 'tanh',    label: 'Tanh',    tip: 'Outputs between −1 and 1. Good for shallow nets.' },
-  { id: 'logistic',label: 'Sigmoid', tip: 'Classic activation. Can suffer vanishing gradients.' },
+  { id: 'relu',     label: 'ReLU',    tip: 'Best default. Fast and avoids vanishing gradients.' },
+  { id: 'tanh',     label: 'Tanh',    tip: 'Outputs between −1 and 1. Good for shallow nets.' },
+  { id: 'logistic', label: 'Sigmoid', tip: 'Classic activation. Can suffer vanishing gradients.' },
 ]
 
 export default function NeuralNetworkPage() {
-  const [ds, setDs]             = useState(null)
+  const [ds, setDs]                   = useState(null)
   const [problemType, setProblemType] = useState('classification')
-  const [target, setTarget]     = useState('')
-  const [features, setFeatures] = useState([])
-  const [testSize, setTestSize] = useState(0.2)
-  const [layers, setLayers]     = useState([64, 32])   // neuron counts per hidden layer
-  const [activation, setActivation] = useState('relu')
-  const [maxIter, setMaxIter]   = useState(200)
-  const [loading, setLoading]   = useState(false)
-  const [results, setResults]   = useState(null)
-  const [error, setError]       = useState('')
-  const [csvRaw, setCsvRaw]     = useState('')
+  const [target, setTarget]           = useState('')
+  const [features, setFeatures]       = useState([])
+  const [testSize, setTestSize]       = useState(0.2)
+  const [layers, setLayers]           = useState([64, 32])
+  const [activation, setActivation]   = useState('relu')
+  const [maxIter, setMaxIter]         = useState(200)
+  const [loading, setLoading]         = useState(false)
+  const [results, setResults]         = useState(null)
+  const [error, setError]             = useState('')
+  const [csvRaw, setCsvRaw]           = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -37,12 +38,8 @@ export default function NeuralNetworkPage() {
     const parsed = JSON.parse(d)
     setDs(parsed)
     setCsvRaw(c || '')
-    const numCols = parsed.columns
-      .filter(col => col.dtype.includes('int') || col.dtype.includes('float'))
-      .map(c => c.name)
-    const catCols = parsed.columns
-      .filter(col => !col.dtype.includes('int') && !col.dtype.includes('float'))
-      .map(c => c.name)
+    const numCols = parsed.columns.filter(col => col.dtype.includes('int') || col.dtype.includes('float')).map(c => c.name)
+    const catCols = parsed.columns.filter(col => !col.dtype.includes('int') && !col.dtype.includes('float')).map(c => c.name)
     setTarget(catCols[0] || numCols[numCols.length - 1] || '')
     setFeatures(numCols)
   }, [navigate])
@@ -50,17 +47,9 @@ export default function NeuralNetworkPage() {
   function toggleFeature(col) {
     setFeatures(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])
   }
-
-  // Layer builder helpers
-  function addLayer() {
-    setLayers(prev => [...prev, 32])
-  }
-  function removeLayer(idx) {
-    setLayers(prev => prev.filter((_, i) => i !== idx))
-  }
-  function updateLayer(idx, val) {
-    setLayers(prev => prev.map((v, i) => i === idx ? Number(val) : v))
-  }
+  function addLayer()            { setLayers(prev => [...prev, 32]) }
+  function removeLayer(idx)      { setLayers(prev => prev.filter((_, i) => i !== idx)) }
+  function updateLayer(idx, val) { setLayers(prev => prev.map((v, i) => i === idx ? Number(val) : v)) }
 
   async function handleTrain() {
     if (!target)               { setError('Select a target column.'); return }
@@ -70,29 +59,16 @@ export default function NeuralNetworkPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await trainNeural({
-        problem_type: problemType,
-        target,
-        features,
-        test_size: testSize,
-        csv_data: csvRaw,
-        hidden_layers: layers,
-        activation,
-        max_iter: maxIter,
-      })
-      setResults(res)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+      const res = await trainNeural({ problem_type: problemType, target, features, test_size: testSize, csv_data: csvRaw, hidden_layers: layers, activation, max_iter: maxIter })
+      // ── DAY 5: store model config alongside results ──
+      setResults({ ...res, target, features, test_size: testSize, hidden_layers: layers, activation, max_iter: maxIter })
+    } catch(e) { setError(e.message) }
+    finally { setLoading(false) }
   }
 
   if (!ds) return null
   const allCols = ds.columns.map(c => c.name)
-  const numCols = ds.columns
-    .filter(c => c.dtype.includes('int') || c.dtype.includes('float'))
-    .map(c => c.name)
+  const numCols = ds.columns.filter(c => c.dtype.includes('int') || c.dtype.includes('float')).map(c => c.name)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
@@ -108,7 +84,6 @@ export default function NeuralNetworkPage() {
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#f0f0f0', marginBottom: 4 }}>Configure MLP</h2>
             <p style={{ color: '#555', fontSize: 14, marginBottom: 28 }}>Build a multilayer perceptron for classification or regression.</p>
 
-            {/* Problem type */}
             <Section label='1. Problem type'>
               <div style={{ display: 'flex', gap: 10 }}>
                 {['classification', 'regression'].map(pt => (
@@ -123,7 +98,6 @@ export default function NeuralNetworkPage() {
               </div>
             </Section>
 
-            {/* Target */}
             <Section label='2. Target column'>
               <select value={target} onChange={e => setTarget(e.target.value)} style={selectStyle}>
                 {allCols.map(c => <option key={c} value={c}>{c}</option>)}
@@ -133,7 +107,6 @@ export default function NeuralNetworkPage() {
               </p>
             </Section>
 
-            {/* Features */}
             <Section label='3. Feature columns (inputs)'>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {numCols.map(c => (
@@ -148,30 +121,20 @@ export default function NeuralNetworkPage() {
               <p style={{ fontSize: 11, color: '#444', marginTop: 8 }}>{features.length} selected</p>
             </Section>
 
-            {/* Hidden layer builder */}
             <Section label='4. Hidden layers'>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
                 {layers.map((neurons, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 14px' }}>
                     <span style={{ fontSize: 11, color: '#555', minWidth: 56 }}>Layer {idx + 1}</span>
-                    <input
-                      type='range' min={4} max={256} step={4} value={neurons}
-                      onChange={e => updateLayer(idx, e.target.value)}
-                      style={{ flex: 1, accentColor: ACCENT }}
-                    />
+                    <input type='range' min={4} max={256} step={4} value={neurons} onChange={e => updateLayer(idx, e.target.value)} style={{ flex: 1, accentColor: ACCENT }} />
                     <span style={{ fontSize: 15, fontWeight: 600, color: ACCENT, fontFamily: 'monospace', minWidth: 40, textAlign: 'right' }}>{neurons}</span>
                     <span style={{ fontSize: 11, color: '#555', minWidth: 50 }}>neurons</span>
                     {layers.length > 1 && (
-                      <button onClick={() => removeLayer(idx)} style={{
-                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                        borderRadius: 6, color: '#f87171', fontSize: 12, padding: '4px 8px', cursor: 'pointer',
-                      }}>✕</button>
+                      <button onClick={() => removeLayer(idx)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 12, padding: '4px 8px', cursor: 'pointer' }}>✕</button>
                     )}
                   </div>
                 ))}
               </div>
-
-              {/* Architecture visualiser */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, overflowX: 'auto', padding: '8px 0' }}>
                 <LayerPill label={`In\n(${features.length})`} color='#555' />
                 {layers.map((n, i) => (
@@ -181,19 +144,13 @@ export default function NeuralNetworkPage() {
                   </span>
                 ))}
                 <Arrow />
-                <LayerPill label={`Out`} color='#6c63ff' />
+                <LayerPill label='Out' color='#6c63ff' />
               </div>
-
               {layers.length < 6 && (
-                <button onClick={addLayer} style={{
-                  padding: '8px 16px', background: 'transparent',
-                  border: `1px dashed rgba(245,158,11,0.3)`, borderRadius: 8,
-                  color: '#888', fontSize: 12, cursor: 'pointer',
-                }}>+ Add layer</button>
+                <button onClick={addLayer} style={{ padding: '8px 16px', background: 'transparent', border: '1px dashed rgba(245,158,11,0.3)', borderRadius: 8, color: '#888', fontSize: 12, cursor: 'pointer' }}>+ Add layer</button>
               )}
             </Section>
 
-            {/* Activation */}
             <Section label='5. Activation function'>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {ACTIVATIONS.map(a => (
@@ -209,34 +166,23 @@ export default function NeuralNetworkPage() {
               </div>
             </Section>
 
-            {/* Max iterations */}
             <Section label={`6. Max iterations — ${maxIter}`}>
-              <input type='range' min={50} max={1000} step={50} value={maxIter}
-                onChange={e => setMaxIter(Number(e.target.value))}
-                style={{ width: '100%', accentColor: ACCENT }} />
+              <input type='range' min={50} max={1000} step={50} value={maxIter} onChange={e => setMaxIter(Number(e.target.value))} style={{ width: '100%', accentColor: ACCENT }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 4 }}>
                 <span>50 (fast)</span><span>1000 (thorough)</span>
               </div>
               <p style={{ fontSize: 11, color: '#444', marginTop: 6 }}>Early stopping is enabled — training may finish before this limit.</p>
             </Section>
 
-            {/* Test split */}
             <Section label={`7. Test split — ${Math.round(testSize * 100)}% held back`}>
-              <input type='range' min={10} max={40} value={testSize * 100}
-                onChange={e => setTestSize(Number(e.target.value) / 100)}
-                style={{ width: '100%', accentColor: ACCENT }} />
+              <input type='range' min={10} max={40} value={testSize * 100} onChange={e => setTestSize(Number(e.target.value) / 100)} style={{ width: '100%', accentColor: ACCENT }} />
             </Section>
 
-            {error && (
-              <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#f87171', marginBottom: 16 }}>
-                {error}
-              </div>
-            )}
+            {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#f87171', marginBottom: 16 }}>{error}</div>}
 
             <button onClick={handleTrain} disabled={loading} style={{
               width: '100%', padding: '14px', background: loading ? '#333' : ACCENT,
-              border: 'none', borderRadius: 10, color: '#fff', fontSize: 15,
-              fontWeight: 600, cursor: loading ? 'default' : 'pointer', transition: 'all 0.2s',
+              border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 600, cursor: loading ? 'default' : 'pointer', transition: 'all 0.2s',
             }}>
               {loading ? 'Training...' : 'Train neural network'}
             </button>
@@ -251,8 +197,7 @@ export default function NeuralNetworkPage() {
 
 function NeuralResults({ results, onReset }) {
   const isClassification = results.problem_type === 'classification'
-
-  const classMetrics = isClassification ? [
+  const metrics = isClassification ? [
     { label: 'Accuracy',  value: results.accuracy  + '%', color: '#f59e0b' },
     { label: 'F1 Score',  value: results.f1        + '%', color: '#6c63ff' },
     { label: 'Precision', value: results.precision + '%', color: '#10b981' },
@@ -263,7 +208,6 @@ function NeuralResults({ results, onReset }) {
     { label: 'R²',   value: results.r2,   color: '#10b981' },
     { label: 'MSE',  value: results.mse,  color: '#6c63ff' },
   ]
-
   const lossCurveData = (results.loss_curve || []).map((v, i) => ({ epoch: i + 1, loss: v }))
 
   return (
@@ -271,16 +215,13 @@ function NeuralResults({ results, onReset }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 600, color: '#f0f0f0', marginBottom: 4 }}>Results</h2>
-          <p style={{ color: '#555', fontSize: 13 }}>
-            {results.n_train} training rows · {results.n_test} test rows · {results.n_iter} iterations
-          </p>
+          <p style={{ color: '#555', fontSize: 13 }}>{results.n_train} training rows · {results.n_test} test rows · {results.n_iter} iterations</p>
         </div>
         <button onClick={onReset} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#888', fontSize: 13, cursor: 'pointer' }}>← Reconfigure</button>
       </div>
 
-      {/* Metric cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 24 }}>
-        {classMetrics.map(m => (
+        {metrics.map(m => (
           <div key={m.label} style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '16px 14px', textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 600, color: m.color, fontFamily: 'monospace', marginBottom: 4 }}>{m.value}</div>
             <div style={{ fontSize: 12, color: '#555' }}>{m.label}</div>
@@ -288,7 +229,6 @@ function NeuralResults({ results, onReset }) {
         ))}
       </div>
 
-      {/* Loss curve */}
       {lossCurveData.length > 0 && (
         <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
           <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Training loss curve</p>
@@ -305,7 +245,6 @@ function NeuralResults({ results, onReset }) {
         </div>
       )}
 
-      {/* Confusion matrix (classification) */}
       {isClassification && results.confusion_matrix && (
         <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
           <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Confusion matrix</p>
@@ -335,7 +274,6 @@ function NeuralResults({ results, onReset }) {
         </div>
       )}
 
-      {/* Predicted vs Actual scatter (regression) */}
       {!isClassification && results.scatter && results.scatter.length > 0 && (
         <div style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
           <p style={{ fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Predicted vs actual</p>
@@ -350,22 +288,28 @@ function NeuralResults({ results, onReset }) {
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* ── DAY 5: Code export ── */}
+      <CodeExport payload={{
+        model_type: 'neural',
+        model_name: 'mlp',
+        problem_type: results.problem_type,
+        target: results.target || '',
+        features: results.features || [],
+        test_size: results.test_size || 0.2,
+        hidden_layers: results.hidden_layers || [64, 32],
+        activation: results.activation || 'relu',
+        max_iter: results.max_iter || 200,
+      }} />
     </div>
   )
 }
 
-// Mini architecture visualiser components
 function LayerPill({ label, color }) {
   return (
-    <div style={{
-      background: '#13131a', border: `1px solid ${color}`,
-      borderRadius: 8, padding: '6px 10px', textAlign: 'center',
-      minWidth: 48, flexShrink: 0,
-    }}>
+    <div style={{ background: '#13131a', border: `1px solid ${color}`, borderRadius: 8, padding: '6px 10px', textAlign: 'center', minWidth: 48, flexShrink: 0 }}>
       {label.split('\n').map((line, i) => (
-        <div key={i} style={{ fontSize: i === 0 ? 10 : 12, color: i === 0 ? '#666' : color, fontFamily: 'monospace', fontWeight: i === 1 ? 600 : 400 }}>
-          {line}
-        </div>
+        <div key={i} style={{ fontSize: i === 0 ? 10 : 12, color: i === 0 ? '#666' : color, fontFamily: 'monospace', fontWeight: i === 1 ? 600 : 400 }}>{line}</div>
       ))}
     </div>
   )
