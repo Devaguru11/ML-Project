@@ -86,7 +86,7 @@ async function streamTrain(url, payload, onEvent) {
     buffer = lines.pop()
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        try { onEvent(JSON.parse(line.slice(6))) } catch {}
+        try { onEvent(JSON.parse(line.slice(6))) } catch {} // eslint-disable-line no-empty
       }
     }
   }

@@ -15,7 +15,6 @@ const CONF_COLOR = { high: '#10b981', medium: '#f59e0b', low: '#f87171' }
 
 export default function DatasetReport() {
   const [analysis, setAnalysis]       = useState(null)
-  const [ds, setDs]                   = useState(null)
   const [selected, setSelected]       = useState(null)
   const [preprocessing, setPreprocessing] = useState(false)
   const [preprocessDone, setPreprocessDone] = useState(false)
@@ -29,7 +28,6 @@ export default function DatasetReport() {
     if (!a || !d) { navigate('/upload'); return }
     const parsed = JSON.parse(a)
     setAnalysis(parsed)
-    setDs(JSON.parse(d))
     // Auto-select the top suggestion
     if (parsed.suggestions && parsed.suggestions.length > 0) {
       setSelected(parsed.suggestions[0].type)
@@ -69,7 +67,6 @@ export default function DatasetReport() {
 
   if (!analysis) return null
 
-  const topSuggestion = analysis.suggestions?.[0]
   const health = analysis.health_score ?? 0
   const healthColor = health >= 80 ? '#10b981' : health >= 50 ? '#f59e0b' : '#f87171'
   const healthLabel = health >= 80 ? 'Healthy' : health >= 50 ? 'Fair' : 'Needs attention'

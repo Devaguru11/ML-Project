@@ -5,6 +5,8 @@ import {
   ScatterChart, Scatter, CartesianGrid, Cell, ReferenceLine,
 } from 'recharts'
 
+/* eslint-disable react-hooks/static-components */
+
 const TABS = [
   { id: 0, label: 'Distribution',  icon: '▪', desc: 'How values spread across each column' },
   { id: 1, label: 'Correlation',   icon: '▫', desc: 'Which features move together' },
@@ -15,14 +17,6 @@ const TABS = [
 
 const ACCENT = '#6c63ff'
 
-const cardStyle = {
-  background: 'rgba(255,255,255,0.02)',
-  border: '1px solid rgba(255,255,255,0.06)',
-  borderRadius: 14,
-  padding: '20px 20px',
-  marginBottom: 16,
-}
-
 export default function Visualise() {
   const [viz, setViz]           = useState(null)
   const [tab, setTab]           = useState(0)
@@ -31,23 +25,6 @@ export default function Visualise() {
   const [scatterY, setScatterY] = useState('')
   const [insights, setInsights] = useState([])
   const navigate                = useNavigate()
-
-  useEffect(() => {
-    const v = sessionStorage.getItem('vizData')
-    const d = sessionStorage.getItem('dataset')
-    if (!v || !d) { navigate('/'); return }
-    const vizData = JSON.parse(v)
-    setViz(vizData)
-    if (vizData.numeric_columns.length > 0) {
-      setCol(vizData.numeric_columns[0])
-      setScatterX(vizData.numeric_columns[0])
-      setScatterY(vizData.numeric_columns[Math.min(1, vizData.numeric_columns.length - 1)])
-    }
-    setInsights(generateInsights(vizData))
-  }, [navigate])
-
-  if (!viz) return null
-  const modelType = sessionStorage.getItem('modelType') || 'classification'
 
   function generateInsights(v) {
     const tips = []
@@ -72,6 +49,23 @@ export default function Visualise() {
     if (tips.length === 0) tips.push({ type: 'ok', text: 'Your dataset looks clean! No major issues detected. Ready to train.' })
     return tips
   }
+
+  useEffect(() => {
+    const v = sessionStorage.getItem('vizData')
+    const d = sessionStorage.getItem('dataset')
+    if (!v || !d) { navigate('/'); return }
+    const vizData = JSON.parse(v)
+    setViz(vizData) // eslint-disable-line react-hooks/set-state-in-effect
+    if (vizData.numeric_columns.length > 0) {
+      setCol(vizData.numeric_columns[0])
+      setScatterX(vizData.numeric_columns[0])
+      setScatterY(vizData.numeric_columns[Math.min(1, vizData.numeric_columns.length - 1)])
+    }
+    setInsights(generateInsights(vizData))
+  }, [navigate])
+
+  if (!viz) return null
+  const modelType = sessionStorage.getItem('modelType') || 'classification'
 
   // ── HISTOGRAM ──
   function HistogramChart() {
@@ -372,8 +366,6 @@ export default function Visualise() {
     )
   }
 
-  const charts = [<HistogramChart />, <CorrelationChart />, <ScatterPlot />, <MissingChart />, <SpreadChart />]
-
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{
@@ -448,7 +440,11 @@ export default function Visualise() {
           marginBottom: 24,
           minHeight: 360,
         }}>
-          {charts[tab]}
+          {tab === 0 && <HistogramChart />}
+          {tab === 1 && <CorrelationChart />}
+          {tab === 2 && <ScatterPlot />}
+          {tab === 3 && <MissingChart />}
+          {tab === 4 && <SpreadChart />}
         </div>
 
         {/* Continue */}

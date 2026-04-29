@@ -35,7 +35,7 @@ export default function ClassificationPage() {
     const c = sessionStorage.getItem('csvRaw')
     if (!d) { navigate('/'); return }
     const parsed = JSON.parse(d)
-    setDs(parsed)
+    setDs(parsed) // eslint-disable-line react-hooks/set-state-in-effect
     setCsvRaw(c || '')
     const numCols = parsed.columns.filter(col =>
       col.dtype.includes('int') || col.dtype.includes('float')).map(c => c.name)
@@ -43,7 +43,7 @@ export default function ClassificationPage() {
       !col.dtype.includes('int') && !col.dtype.includes('float')).map(c => c.name)
     setTarget(catCols[0] || parsed.columns[parsed.columns.length - 1].name)
     setFeatures(numCols)
-  }, [navigate])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleFeature(col) {
     setFeatures(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])

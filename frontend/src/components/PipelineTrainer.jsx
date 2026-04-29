@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 const STAGES = [
   { id: 'preprocess', label: 'Pre-processing',  desc: 'Impute → Scale → Encode', color: '#0ea5e9' },
@@ -13,7 +13,6 @@ export default function PipelineTrainer({ onTrain, onResult, accent = '#6c63ff',
   const [stageId, setStageId] = useState('')
   const [msg, setMsg]         = useState('')
   const [log, setLog]         = useState([])
-  const abortRef = useRef(null)
 
   async function handleTrain() {
     setPhase('running')

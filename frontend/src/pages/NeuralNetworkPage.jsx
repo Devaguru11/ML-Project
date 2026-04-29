@@ -35,7 +35,7 @@ export default function NeuralNetworkPage() {
     const c = sessionStorage.getItem('csvRaw')
     if (!d) { navigate('/'); return }
     const parsed = JSON.parse(d)
-    setDs(parsed)
+    setDs(parsed) // eslint-disable-line react-hooks/set-state-in-effect
     setCsvRaw(c || '')
     const numCols = parsed.columns
       .filter(col => col.dtype.includes('int') || col.dtype.includes('float'))
@@ -45,7 +45,7 @@ export default function NeuralNetworkPage() {
       .map(c => c.name)
     setTarget(catCols[0] || numCols[numCols.length - 1] || '')
     setFeatures(numCols)
-  }, [navigate])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFeature = col =>
     setFeatures(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])

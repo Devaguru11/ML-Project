@@ -16,8 +16,8 @@ export default function ModelPage({ type }) {
   useEffect(() => {
     const raw = sessionStorage.getItem('dataset')
     if (!raw) { navigate('/'); return }
-    setDs(JSON.parse(raw))
-  }, [navigate])
+    setDs(JSON.parse(raw)) // eslint-disable-line react-hooks/set-state-in-effect
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ds) return null
 

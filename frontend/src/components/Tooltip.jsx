@@ -20,9 +20,9 @@ export default function Tooltip({ text }) {
           transform: 'translateX(-50%)',
           background: '#1c1c26', border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#ccc',
-          whiteSpace: 'nowrap', zIndex: 100, lineHeight: 1.5,
+          whiteSpace: 'normal', zIndex: 100, lineHeight: 1.5,
           boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          maxWidth: 240, whiteSpace: 'normal',
+          maxWidth: 240,
         }}>
           {text}
           <div style={{
