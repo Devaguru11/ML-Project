@@ -1440,3 +1440,10 @@ plt.tight_layout(); plt.savefig('neural_reg.png',dpi=150); plt.show()
         code = "# Unknown model type"
 
     return {'code': code}
+
+import os
+import uvicorn
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
